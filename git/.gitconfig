@@ -1,0 +1,30 @@
+[user]
+	email = jak.kowalski@email.com
+	name = Jan Kowalski
+
+[init]
+	templatedir = C:/Users/jan.kowalski/.git-templates
+
+[alias]
+	last = log -1 --stat
+	cp = cherry-pick
+	co = checkout
+	cl = clone
+	ci = commit
+	st = status -sb
+	br = branch
+	ft = fetch -p
+	unstage = reset HEAD --
+	dc = diff --cached
+	lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %Cblue<%an>%Creset' --abbrev-commit --date=relative --all
+	cln = clean -xdn
+	cli = clean -xdi
+	clf = clean -xdf
+
+[color]
+	ui = true
+
+[push]
+	default = simple
+[core]
+	autocrlf = true
