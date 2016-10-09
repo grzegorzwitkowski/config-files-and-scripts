@@ -2,6 +2,10 @@ build/
 target/
 
 .idea/
-*.iml/
+*.iml
+
+.settings/
+.classpath
+.project
 
 .gradle/
