@@ -1,0 +1,5 @@
+#!/bin/bash
+
+git init
+cp ~/.gitconfig .git/config
+sed -i 's/<globally@configured.email>/<my@another.email>/g' .git/config
