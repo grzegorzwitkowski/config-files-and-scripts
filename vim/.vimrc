@@ -12,6 +12,7 @@ Plugin 'kien/ctrlp.vim'
 Plugin 'rust-lang/rust.vim'
 Plugin 'vim-airline/vim-airline'
 Plugin 'vim-airline/vim-airline-themes'
+Plugin 'udalov/kotlin-vim'
 call vundle#end()
 filetype plugin indent on
 
@@ -54,16 +55,21 @@ set nobackup
 set noswapfile
 
 " Airline
-let g:airline#extensions#tabline#enabled=1
+set noshowmode
 set laststatus=2
-set encoding=utf-8
-let g:airline_theme='solarized'
 let g:airline_powerline_fonts=1
+let g:airline_theme='solarized'
+let g:airline#extensions#tabline#enabled=1
+set encoding=utf-8
 
 " GUI
-set lines=40 columns=150
-set guifont=DejaVu\ Sans\ Mono\ for\ Powerline:h10
-set background=dark
-colorscheme solarized
-set guioptions-=T
-set noshowmode
+if has("gui_running")
+  set lines=40 columns=150
+  set guifont=DejaVu\ Sans\ Mono\ for\ Powerline:h10
+  set background=light
+  colorscheme solarized
+  set guioptions-=T
+endif
+
+" Key bindings
+nmap <C-\> :NERDTreeToggle<CR>
