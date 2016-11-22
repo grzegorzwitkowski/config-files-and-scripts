@@ -49,3 +49,13 @@ export SDKMAN_DIR="/c/Users/grzegorz.witkowski/.sdkman"
 [[ -s "/c/Users/grzegorz.witkowski/.sdkman/bin/sdkman-init.sh" ]] && source "/c/Users/grzegorz.witkowski/.sdkman/bin/sdkman-init.sh"
 
 ###-SDK-MAN-END-----------------------------------------------------------------
+
+###-ALIASES-BEGIN---------------------------------------------------------------
+alias cdp="cd /d/Projects"
+alias cdt="cd /c/Tools/"
+
+alias rmd=rmd_func
+rmd_func() {
+        rm -rf $1
+}
+###-ALIASES-END-----------------------------------------------------------------
