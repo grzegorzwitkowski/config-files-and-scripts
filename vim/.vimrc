@@ -73,3 +73,5 @@ endif
 
 " Key bindings
 nmap <C-\> :NERDTreeToggle<CR>
+nmap <Tab> :bn<CR>
+nmap <S-Tab> :bp<CR>
