@@ -24,7 +24,14 @@
 [color]
 	ui = true
 
+[merge]
+	ff = only
+	conflictstyle = diff3
+
 [push]
 	default = simple
 [core]
 	autocrlf = true
+
+[status]
+	showUntrackedFiles = all
