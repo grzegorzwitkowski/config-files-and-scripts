@@ -13,3 +13,6 @@ target/
 .settings/
 .classpath
 .project
+
+# Python
+__pycache__/
