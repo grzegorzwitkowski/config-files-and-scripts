@@ -20,6 +20,7 @@
 	cln = clean -xdn
 	cli = clean -xdi
 	clf = clean -xdf
+	cls = clean -xdf -e .idea/ -e .gradle/
 
 [color]
 	ui = true
