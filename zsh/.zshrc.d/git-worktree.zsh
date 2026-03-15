@@ -39,8 +39,103 @@ _gw_repo_root() {
 	emulate -L zsh
 	local common_git_dir
 	common_git_dir=$(git rev-parse --git-common-dir 2>/dev/null) || return 1
-	printf '%s\n' "${common_git_dir:A:h}"
+
+	if [[ "${common_git_dir:A:t}" == ".git" ]]; then
+		printf '%s\n' "${common_git_dir:A:h}"
+	else
+		printf '%s\n' "${common_git_dir:A}"
+	fi
 }
+
+_gw_git_dir() {
+	emulate -L zsh
+	git rev-parse --git-dir 2>/dev/null
+}
+
+_gw_top_level() {
+	emulate -L zsh
+	git rev-parse --show-toplevel 2>/dev/null
+}
+
+_gw_current_ref() {
+	emulate -L zsh
+	git symbolic-ref --quiet --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null
+}
+
+_gw_is_linked_worktree() {
+	emulate -L zsh
+	local git_dir common_git_dir
+	git_dir=$(_gw_git_dir) || return 1
+	common_git_dir=$(git rev-parse --git-common-dir 2>/dev/null) || return 1
+	[[ "${git_dir:A}" != "${common_git_dir:A}" ]]
+}
+
+_gw_current_worktree_name() {
+	emulate -L zsh
+	local top_level
+	_gw_is_linked_worktree || return 1
+	top_level=$(_gw_top_level) || return 1
+	printf '%s\n' "${top_level:A:t}"
+}
+
+_gw_prompt_path_label() {
+	emulate -L zsh
+	local pwd_abs repo_root repo_name top_abs top_level relative_path
+
+	repo_root=$(_gw_repo_root 2>/dev/null)
+	repo_name="${repo_root:t}"
+
+	if _gw_is_linked_worktree; then
+		top_level=$(_gw_top_level) || return 1
+		pwd_abs=${PWD:A}
+		top_abs=${top_level:A}
+		if [[ "$pwd_abs" == "$top_abs" ]]; then
+			printf '%s\n' "$repo_name"
+		else
+			relative_path="${pwd_abs#${top_abs}/}"
+			printf '%s/%s\n' "$repo_name" "$relative_path"
+		fi
+		return 0
+	fi
+
+	if [[ -n "$repo_name" && -z "$(_gw_top_level 2>/dev/null)" ]]; then
+		printf '%s\n' "$repo_name"
+		return 0
+	fi
+
+	printf '%%1~\n'
+}
+
+_gw_prompt_git_info() {
+	emulate -L zsh
+	local ref worktree_name
+
+	ref=$(_gw_current_ref) || return 1
+
+	if worktree_name=$(_gw_current_worktree_name 2>/dev/null); then
+		printf '%%F{blue}git:(%%F{yellow}w[%s] %%F{red}r[%s]%%F{blue})%%f\n' "$worktree_name" "$ref"
+		return 0
+	fi
+
+	printf '%%F{blue}git:(%%F{red}%s%%F{blue})%%f\n' "$ref"
+}
+
+if [[ -o interactive ]]; then
+	autoload -Uz add-zsh-hook
+	setopt prompt_subst
+
+	typeset -g GW_PROMPT_PATH='%1~'
+	typeset -g GW_PROMPT_GIT=''
+
+	_gw_update_prompt_segments() {
+		emulate -L zsh
+		GW_PROMPT_PATH=$(_gw_prompt_path_label 2>/dev/null || printf '%%1~')
+		GW_PROMPT_GIT=$(_gw_prompt_git_info 2>/dev/null || printf '')
+	}
+
+	add-zsh-hook precmd _gw_update_prompt_segments
+	PROMPT='%B%F{green}➜%f  %F{cyan}${GW_PROMPT_PATH}%f${GW_PROMPT_GIT:+ ${GW_PROMPT_GIT}} %b'
+fi
 
 gwa() {
 	emulate -L zsh
