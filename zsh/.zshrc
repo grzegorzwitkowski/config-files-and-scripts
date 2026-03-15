@@ -4,7 +4,7 @@ alias cdp="cd ~/Programowanie/Projekty/"
 
 # >>> LOAD EXTRA ZSH CONFIG
 if [[ -d "$HOME/.zshrc.d" ]]; then
-	for zsh_config in "$HOME"/.zshrc.d/*.zsh(.N); do
+	for zsh_config in "$HOME"/.zshrc.d/*.zsh(N); do
 		source "$zsh_config"
 	done
 	unset zsh_config
