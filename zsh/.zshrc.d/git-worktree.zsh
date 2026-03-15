@@ -78,46 +78,104 @@ _gw_current_worktree_name() {
 	printf '%s\n' "${top_level:A:t}"
 }
 
-_gw_prompt_path_label() {
+
+typeset -g GW_PROMPT_LAST_PWD=''
+typeset -g GW_PROMPT_REPO_ROOT=''
+typeset -g GW_PROMPT_TOP_LEVEL=''
+typeset -g GW_PROMPT_WORKTREE_NAME=''
+typeset -g GW_PROMPT_IS_LINKED=0
+
+_gw_refresh_prompt_context() {
 	emulate -L zsh
-	local pwd_abs repo_root repo_name top_abs top_level relative_path
+	local git_dir common_git_dir repo_root repo_output top_level
+	local -a repo_lines
 
-	repo_root=$(_gw_repo_root 2>/dev/null)
-	repo_name="${repo_root:t}"
+	GW_PROMPT_LAST_PWD=${PWD:A}
+	GW_PROMPT_REPO_ROOT=''
+	GW_PROMPT_TOP_LEVEL=''
+	GW_PROMPT_WORKTREE_NAME=''
+	GW_PROMPT_IS_LINKED=0
 
-	if _gw_is_linked_worktree; then
-		top_level=$(_gw_top_level) || return 1
+	repo_output=$(git rev-parse --path-format=absolute --git-dir --git-common-dir 2>/dev/null) || return 1
+	repo_lines=("${(@f)repo_output}")
+	git_dir="$repo_lines[1]"
+	common_git_dir="$repo_lines[2]"
+
+	if [[ -z "$git_dir" || -z "$common_git_dir" ]]; then
+		return 1
+	fi
+
+	if [[ "${common_git_dir:t}" == ".git" ]]; then
+		repo_root="${common_git_dir:h}"
+	else
+		repo_root="$common_git_dir"
+	fi
+
+	GW_PROMPT_REPO_ROOT="$repo_root"
+
+	if [[ "$git_dir" != "$common_git_dir" ]]; then
+		GW_PROMPT_IS_LINKED=1
+	fi
+
+	top_level=$(git rev-parse --path-format=absolute --show-toplevel 2>/dev/null) || top_level=''
+	GW_PROMPT_TOP_LEVEL="$top_level"
+
+	if (( GW_PROMPT_IS_LINKED )) && [[ -n "$top_level" ]]; then
+		GW_PROMPT_WORKTREE_NAME="${top_level:t}"
+	fi
+}
+
+_gw_update_prompt_path() {
+	emulate -L zsh
+	local pwd_abs relative_path repo_name top_abs
+
+	repo_name="${GW_PROMPT_REPO_ROOT:t}"
+
+	if [[ -z "$repo_name" ]]; then
+		GW_PROMPT_PATH='%1~'
+		return 0
+	fi
+
+	if (( GW_PROMPT_IS_LINKED )) && [[ -n "$GW_PROMPT_TOP_LEVEL" ]]; then
 		pwd_abs=${PWD:A}
-		top_abs=${top_level:A}
+		top_abs="$GW_PROMPT_TOP_LEVEL"
 		if [[ "$pwd_abs" == "$top_abs" ]]; then
-			printf '%s\n' "$repo_name"
+			GW_PROMPT_PATH="$repo_name"
 		else
 			relative_path="${pwd_abs#${top_abs}/}"
-			printf '%s/%s\n' "$repo_name" "$relative_path"
+			GW_PROMPT_PATH="$repo_name/$relative_path"
 		fi
 		return 0
 	fi
 
-	if [[ -n "$repo_name" && -z "$(_gw_top_level 2>/dev/null)" ]]; then
-		printf '%s\n' "$repo_name"
+	if [[ -z "$GW_PROMPT_TOP_LEVEL" ]]; then
+		GW_PROMPT_PATH="$repo_name"
 		return 0
 	fi
 
-	printf '%%1~\n'
+	GW_PROMPT_PATH='%1~'
 }
 
-_gw_prompt_git_info() {
+_gw_update_prompt_git() {
 	emulate -L zsh
-	local ref worktree_name
+	local ref
 
-	ref=$(_gw_current_ref) || return 1
-
-	if worktree_name=$(_gw_current_worktree_name 2>/dev/null); then
-		printf '%%F{blue}git:(%%F{yellow}w[%s] %%F{red}r[%s]%%F{blue})%%f\n' "$worktree_name" "$ref"
+	if [[ -z "$GW_PROMPT_REPO_ROOT" ]]; then
+		GW_PROMPT_GIT=''
 		return 0
 	fi
 
-	printf '%%F{blue}git:(%%F{red}%s%%F{blue})%%f\n' "$ref"
+	ref=$(_gw_current_ref 2>/dev/null) || {
+		GW_PROMPT_GIT=''
+		return 0
+	}
+
+	if [[ -n "$GW_PROMPT_WORKTREE_NAME" ]]; then
+		GW_PROMPT_GIT=$(printf '%%F{blue}git:(%%F{yellow}w[%s] %%F{red}r[%s]%%F{blue})%%f' "$GW_PROMPT_WORKTREE_NAME" "$ref")
+		return 0
+	fi
+
+	GW_PROMPT_GIT=$(printf '%%F{blue}git:(%%F{red}%s%%F{blue})%%f' "$ref")
 }
 
 if [[ -o interactive ]]; then
@@ -127,14 +185,23 @@ if [[ -o interactive ]]; then
 	typeset -g GW_PROMPT_PATH='%1~'
 	typeset -g GW_PROMPT_GIT=''
 
-	_gw_update_prompt_segments() {
+	_gw_update_prompt_directory_state() {
 		emulate -L zsh
-		GW_PROMPT_PATH=$(_gw_prompt_path_label 2>/dev/null || printf '%%1~')
-		GW_PROMPT_GIT=$(_gw_prompt_git_info 2>/dev/null || printf '')
+		_gw_refresh_prompt_context 2>/dev/null || true
+		_gw_update_prompt_path
 	}
 
+	_gw_update_prompt_segments() {
+		emulate -L zsh
+		if [[ "$GW_PROMPT_LAST_PWD" != "${PWD:A}" ]]; then
+			_gw_update_prompt_directory_state
+		fi
+		_gw_update_prompt_git
+	}
+
+	add-zsh-hook chpwd _gw_update_prompt_directory_state
 	add-zsh-hook precmd _gw_update_prompt_segments
-	PROMPT='%B%F{green}➜%f  %F{cyan}${GW_PROMPT_PATH}%f${GW_PROMPT_GIT:+ ${GW_PROMPT_GIT}} %b'
+	PROMPT='%B%F{green}➜%f %F{cyan}${GW_PROMPT_PATH}%f${GW_PROMPT_GIT:+ ${GW_PROMPT_GIT}} %b'
 fi
 
 gwa() {
