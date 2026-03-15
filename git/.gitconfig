@@ -2,9 +2,6 @@
 	email = jak.kowalski@email.com
 	name = Jan Kowalski
 
-[init]
-	templatedir = C:/Users/jan.kowalski/.git-templates
-
 [alias]
 	last = log -1 --stat
 	cp = cherry-pick
@@ -32,7 +29,7 @@
 [push]
 	default = simple
 [core]
-	autocrlf = true
+	autocrlf = input
 
 [status]
 	showUntrackedFiles = all

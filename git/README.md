@@ -1,7 +1,3 @@
-# Global excludes
-
-path `<GIT_TEMPLATES_DIR>/info/exclude`
-
-# Configuration file
+# Git config file
 
 path `~/.gitconfig`
