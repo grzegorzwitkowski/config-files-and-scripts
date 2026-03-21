@@ -10,3 +10,8 @@ if [[ -d "$HOME/.zshrc.d" ]]; then
 	unset zsh_config
 fi
 # <<< LOAD EXTRA ZSH CONFIG
+
+# >>> LANG
+export LANG=en_GB.UTF-8
+# <<< LANG
+
